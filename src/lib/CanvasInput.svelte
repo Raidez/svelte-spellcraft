@@ -1,11 +1,14 @@
 <script lang="ts">
     import cv from "@techstark/opencv-js";
     import { generateShortId } from "../main";
+    import type { MouseEventHandler } from "svelte/elements";
 
     let {
         width,
         height,
         strokeWidth = $bindable(10),
+        eraserMode = $bindable(false),
+        pressureMode = $bindable(true),
         onclear = null,
         onchange = null,
         onupload = null,
@@ -15,20 +18,26 @@
         width: number;
         height: number;
         strokeWidth: number;
+        eraserMode: boolean;
+        pressureMode: boolean;
         onclear: Function | null;
         onchange: Function | null;
         onupload: Function | null;
-        onmouseover: Function | null;
-        onmouseout: Function | null;
+        onmouseover: MouseEventHandler<HTMLCanvasElement> | null;
+        onmouseout: MouseEventHandler<HTMLCanvasElement> | null;
     } = $props();
+
+    const lastPosition = { x: 0, y: 0 };
+    let isPointerDown = false;
+
+    type EventData = {
+        position: { x: number; y: number };
+        pressure: number;
+        drawColor: string;
+    };
 
     let canvasElement: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D;
-    let isDrawing = false;
-    let isEraserMode = false;
-    let mousePos = { x: 0, y: 0 };
-
-    const lastTouch = { x: 0, y: 0 };
 
     $effect(() => {
         let context = canvasElement.getContext("2d");
@@ -38,26 +47,7 @@
             // Initialize canvas with white background
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, width, height);
-
-            // Set default stroke style
-            ctx.strokeStyle = "black";
         }
-
-        canvasElement.addEventListener("touchstart", handleTouchStart, {
-            passive: false,
-        });
-        canvasElement.addEventListener("touchmove", handleTouchMove, {
-            passive: false,
-        });
-        canvasElement.addEventListener("touchend", handleTouchEnd, {
-            passive: false,
-        });
-
-        return () => {
-            canvasElement.removeEventListener("touchstart", handleTouchStart);
-            canvasElement.removeEventListener("touchmove", handleTouchMove);
-            canvasElement.removeEventListener("touchend", handleTouchEnd);
-        };
     });
 
     export function getCanvasContext(): CanvasRenderingContext2D {
@@ -129,134 +119,107 @@
         onclear?.();
     }
 
-    function handleMouseDown(event: MouseEvent): void {
-        event.preventDefault();
-
-        // Start drawing or erasing
-        isDrawing = event.button === 0;
-        isEraserMode = event.button === 2;
-
-        // Update mouse position
-        mousePos = { x: event.offsetX, y: event.offsetY };
-    }
-
-    function handleMouseMove(event: MouseEvent): void {
-        // Draw/erase on canvas
-        if (isEraserMode) {
-            ctx.strokeStyle = "rgba(255,255,255,1)";
-        } else {
-            ctx.strokeStyle = "black";
-        }
-
-        if (isDrawing || isEraserMode) {
-            ctx.lineCap = "round";
-            ctx.lineWidth = strokeWidth;
-            ctx.beginPath();
-            ctx.moveTo(mousePos.x, mousePos.y);
-            ctx.lineTo(event.offsetX, event.offsetY);
-            ctx.stroke();
-
-            onchange?.();
-        }
-
-        // Update mouse position
-        mousePos = { x: event.offsetX, y: event.offsetY };
-    }
-
-    function handleMouseWheel(event: WheelEvent): void {
-        // Control stroke width with mouse wheel
-        event.preventDefault();
-        const delta = -Math.sign(event.deltaY);
-        strokeWidth = Math.min(30, Math.max(5, strokeWidth + delta));
-    }
-
-    function handleStopDrawing(event: Event): void {
-        event.preventDefault();
-
-        isDrawing = false;
-        isEraserMode = false;
-    }
-
-    function handleMouseOver(): void {
-        onmouseover?.();
-    }
-
-    function handleMouseOut(): void {
-        onmouseout?.();
-    }
-
-    function handleContextMenu(event: MouseEvent): void {
-        event.preventDefault();
-    }
-
-    // Touch event handlers
-    function handleTouchStart(event: TouchEvent): void {
-        event.preventDefault();
-
-        const touch = event.changedTouches[0];
-        const elementRect = canvasElement.getBoundingClientRect();
+    // Pointer event handlers
+    function gatherEventData(event: PointerEvent): EventData {
         const position = {
-            x: touch.clientX - elementRect.left,
-            y: touch.clientY - elementRect.top,
+            x: event.offsetX,
+            y: event.offsetY,
         };
 
-        // Draw a dot at the touch position
-        ctx.fillStyle = "black";
+        let pressure = 0.0;
+        if (
+            pressureMode &&
+            (event.pointerType === "pen" || event.pointerType === "touch")
+        ) {
+            pressure = event.pressure;
+        }
+
+        let drawColor = "black";
+        if (
+            eraserMode ||
+            (event.pointerType === "mouse" &&
+                (event.button === 2 || event.buttons === 2))
+        ) {
+            drawColor = "white";
+        }
+
+        return { position, pressure, drawColor };
+    }
+
+    function onpointerdown(event: PointerEvent): void {
+        event.preventDefault();
+
+        // Gather event data
+        const { position, pressure, drawColor } = gatherEventData(event);
+
+        // Adjust stroke size based on pressure (1 to 2 times)
+        const strokeSize = strokeWidth * (1.0 + pressure * 1.0);
+
+        // Draw circle
+        ctx.fillStyle = drawColor;
         ctx.beginPath();
-        ctx.arc(position.x, position.y, strokeWidth / 2, 0, Math.PI * 2);
+        ctx.arc(position.x, position.y, strokeSize / 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Store last touch position
-        lastTouch.x = position.x;
-        lastTouch.y = position.y;
+        // Store last position
+        lastPosition.x = position.x;
+        lastPosition.y = position.y;
+        isPointerDown = true;
     }
 
-    function handleTouchMove(event: TouchEvent): void {
+    function onpointermove(event: PointerEvent): void {
         event.preventDefault();
+        if (!isPointerDown) {
+            return;
+        }
 
-        const touch = event.changedTouches[0];
-        const elementRect = canvasElement.getBoundingClientRect();
-        const position = {
-            x: touch.clientX - elementRect.left,
-            y: touch.clientY - elementRect.top,
-        };
+        // Gather event data
+        const { position, pressure, drawColor } = gatherEventData(event);
 
-        // Draw line from last touch position to current position
-        ctx.strokeStyle = "black";
+        // Adjust stroke size based on pressure (1 to 2 times)
+        const strokeSize = strokeWidth * (1.0 + pressure * 1.0);
+
+        // Draw line
         ctx.lineCap = "round";
-        ctx.lineWidth = strokeWidth;
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth = strokeSize;
         ctx.beginPath();
-        ctx.moveTo(lastTouch.x, lastTouch.y);
+        ctx.moveTo(lastPosition.x, lastPosition.y);
         ctx.lineTo(position.x, position.y);
         ctx.stroke();
 
         // Update last touch position
-        lastTouch.x = position.x;
-        lastTouch.y = position.y;
+        lastPosition.x = position.x;
+        lastPosition.y = position.y;
+        onchange?.();
     }
 
-    function handleTouchEnd(event: TouchEvent): void {
+    function onpointerup(event: PointerEvent): void {
         event.preventDefault();
+        if (!isPointerDown) {
+            return;
+        }
 
-        const touch = event.changedTouches[0];
-        const elementRect = canvasElement.getBoundingClientRect();
-        const position = {
-            x: touch.clientX - elementRect.left,
-            y: touch.clientY - elementRect.top,
-        };
+        // Gather event data
+        const { position, pressure, drawColor } = gatherEventData(event);
 
-        // Draw line from last touch position to current position
-        ctx.strokeStyle = "black";
+        // Adjust stroke size based on pressure (1 to 2 times)
+        const strokeSize = strokeWidth * (1.0 + pressure * 1.0);
+
+        // Draw line
         ctx.lineCap = "round";
-        ctx.lineWidth = strokeWidth;
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth = strokeSize;
         ctx.beginPath();
-        ctx.moveTo(lastTouch.x, lastTouch.y);
+        ctx.moveTo(lastPosition.x, lastPosition.y);
         ctx.lineTo(position.x, position.y);
         ctx.stroke();
 
         // Update last touch position
-        lastTouch.x = position.x;
-        lastTouch.y = position.y;
+        lastPosition.x = position.x;
+        lastPosition.y = position.y;
+        isPointerDown = false;
+        onchange?.();
     }
 </script>
 
@@ -269,19 +232,18 @@
         <i class="bi bi-x-lg"></i>
     </button>
     <canvas
-        class="border box-content m-2 cursor-none"
+        class="border box-content m-2 XXXcursor-none touch-none"
         {width}
         {height}
         bind:this={canvasElement}
-        oncontextmenu={handleContextMenu}
-        onwheel={handleMouseWheel}
-        onmousedown={handleMouseDown}
-        onmousemove={handleMouseMove}
-        onmouseup={handleStopDrawing}
-        onblur={handleStopDrawing}
-        onmouseout={handleMouseOut}
-        onmouseover={handleMouseOver}
-        onfocus={handleMouseOver}
+        oncontextmenu={(event: Event) => event.preventDefault()}
+        {onpointerdown}
+        {onpointermove}
+        {onpointerup}
+        {onmouseover}
+        {onmouseout}
+        onblur={null}
+        onfocus={null}
     >
     </canvas>
     <div class="flex flex-row px-5 lg:px-0">

@@ -9,16 +9,30 @@
 
     let position = $state({ x: 0, y: 0 });
 
-    function handleMouseMove(event: MouseEvent) {
+    function handlePointerDown(event: PointerEvent): void {
+        if (event.pointerType !== "mouse") {
+            position = { x: 0, y: 0 };
+            isVisible = false;
+        }
+    }
+
+    function handlePointerMove(event: PointerEvent): void {
+        if (event.pointerType !== "mouse") {
+            position = { x: 0, y: 0 };
+            isVisible = false;
+            return;
+        }
+
         position.x = event.pageX - size / 2;
         position.y = event.pageY - size / 2;
     }
 
     $effect(() => {
-        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("pointerdown", handlePointerDown);
+        document.addEventListener("pointermove", handlePointerMove);
 
         return () => {
-            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("pointermove", handlePointerMove);
         };
     });
 </script>

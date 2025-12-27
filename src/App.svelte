@@ -9,6 +9,9 @@
     import ScoreDisplay from "./lib/ScoreDisplay.svelte";
 
     let strokeWidth = $state(10);
+    let eraserMode = $state(false);
+    let pressureMode = $state(true);
+
     let sim = $state(0);
     let score = $state(0);
     let isSpecial = $state(false);
@@ -83,10 +86,10 @@
 
 <StrokeCursor bind:size={strokeWidth} bind:isVisible={cursorVisible} />
 
-<main class="flex flex-col items-center pt-2 lg:p-10">
-    <h1 class="text-4xl mb-2">SpellCraft</h1>
+<main class="flex flex-col items-center p-2 lg:p-10">
+    <h1 class="text-4xl m-2">SpellCraft</h1>
 
-    <StrokeInput bind:strokeWidth />
+    <StrokeInput bind:strokeWidth bind:eraserMode bind:pressureMode />
 
     <div class="flex flex-col lg:flex-row">
         <CanvasInput
@@ -94,6 +97,8 @@
             {width}
             {height}
             bind:strokeWidth
+            bind:eraserMode
+            bind:pressureMode
             onclear={handleResetScore}
             onchange={handleResetScore}
             onupload={handleResetScore}
@@ -120,6 +125,8 @@
             {width}
             {height}
             bind:strokeWidth
+            bind:eraserMode
+            bind:pressureMode
             onclear={handleResetScore}
             onchange={handleResetScore}
             onupload={handleResetScore}
