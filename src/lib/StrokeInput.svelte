@@ -3,9 +3,9 @@
 </script>
 
 <label class="my-4">
-    <span class="inline-block">Stroke Width</span>
+    <span class="block lg:inline-block text-sm lg:text-base">Stroke Width</span>
     <input
-        class="align-bottom mx-2"
+        class="align-bottom mx-2 text-sm lg:text-base"
         type="range"
         min="5"
         max="30"

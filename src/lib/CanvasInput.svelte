@@ -28,6 +28,8 @@
     let isEraserMode = false;
     let mousePos = { x: 0, y: 0 };
 
+    const lastTouch = { x: 0, y: 0 };
+
     $effect(() => {
         let context = canvasElement.getContext("2d");
         if (context) {
@@ -40,6 +42,22 @@
             // Set default stroke style
             ctx.strokeStyle = "black";
         }
+
+        canvasElement.addEventListener("touchstart", handleTouchStart, {
+            passive: false,
+        });
+        canvasElement.addEventListener("touchmove", handleTouchMove, {
+            passive: false,
+        });
+        canvasElement.addEventListener("touchend", handleTouchEnd, {
+            passive: false,
+        });
+
+        return () => {
+            canvasElement.removeEventListener("touchstart", handleTouchStart);
+            canvasElement.removeEventListener("touchmove", handleTouchMove);
+            canvasElement.removeEventListener("touchend", handleTouchEnd);
+        };
     });
 
     export function getCanvasContext(): CanvasRenderingContext2D {
@@ -152,7 +170,9 @@
         strokeWidth = Math.min(30, Math.max(5, strokeWidth + delta));
     }
 
-    function handleStopDrawing(): void {
+    function handleStopDrawing(event: Event): void {
+        event.preventDefault();
+
         isDrawing = false;
         isEraserMode = false;
     }
@@ -168,6 +188,76 @@
     function handleContextMenu(event: MouseEvent): void {
         event.preventDefault();
     }
+
+    // Touch event handlers
+    function handleTouchStart(event: TouchEvent): void {
+        event.preventDefault();
+
+        const touch = event.changedTouches[0];
+        const elementRect = canvasElement.getBoundingClientRect();
+        const position = {
+            x: touch.clientX - elementRect.left,
+            y: touch.clientY - elementRect.top,
+        };
+
+        // Draw a dot at the touch position
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(position.x, position.y, strokeWidth / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Store last touch position
+        lastTouch.x = position.x;
+        lastTouch.y = position.y;
+    }
+
+    function handleTouchMove(event: TouchEvent): void {
+        event.preventDefault();
+
+        const touch = event.changedTouches[0];
+        const elementRect = canvasElement.getBoundingClientRect();
+        const position = {
+            x: touch.clientX - elementRect.left,
+            y: touch.clientY - elementRect.top,
+        };
+
+        // Draw line from last touch position to current position
+        ctx.strokeStyle = "black";
+        ctx.lineCap = "round";
+        ctx.lineWidth = strokeWidth;
+        ctx.beginPath();
+        ctx.moveTo(lastTouch.x, lastTouch.y);
+        ctx.lineTo(position.x, position.y);
+        ctx.stroke();
+
+        // Update last touch position
+        lastTouch.x = position.x;
+        lastTouch.y = position.y;
+    }
+
+    function handleTouchEnd(event: TouchEvent): void {
+        event.preventDefault();
+
+        const touch = event.changedTouches[0];
+        const elementRect = canvasElement.getBoundingClientRect();
+        const position = {
+            x: touch.clientX - elementRect.left,
+            y: touch.clientY - elementRect.top,
+        };
+
+        // Draw line from last touch position to current position
+        ctx.strokeStyle = "black";
+        ctx.lineCap = "round";
+        ctx.lineWidth = strokeWidth;
+        ctx.beginPath();
+        ctx.moveTo(lastTouch.x, lastTouch.y);
+        ctx.lineTo(position.x, position.y);
+        ctx.stroke();
+
+        // Update last touch position
+        lastTouch.x = position.x;
+        lastTouch.y = position.y;
+    }
 </script>
 
 <div class="relative flex flex-col">
@@ -179,7 +269,7 @@
         <i class="bi bi-x-lg"></i>
     </button>
     <canvas
-        class="border m-2 cursor-none"
+        class="border box-content m-2 cursor-none"
         {width}
         {height}
         bind:this={canvasElement}
@@ -194,7 +284,7 @@
         onfocus={handleMouseOver}
     >
     </canvas>
-    <div class="flex flex-row">
+    <div class="flex flex-row px-5 lg:px-0">
         <button
             class="m-2 grow border rounded-lg py-2 px-3 bg-amber-600 hover:bg-amber-700 cursor-pointer"
             onclick={handleUpload}

@@ -83,12 +83,12 @@
 
 <StrokeCursor bind:size={strokeWidth} bind:isVisible={cursorVisible} />
 
-<main class="flex flex-col items-center p-10">
-    <h1 class="text-2xl">SpellCraft</h1>
+<main class="flex flex-col items-center pt-2 lg:p-10">
+    <h1 class="text-4xl mb-2">SpellCraft</h1>
 
     <StrokeInput bind:strokeWidth />
 
-    <div class="flex flex-row">
+    <div class="flex flex-col lg:flex-row">
         <CanvasInput
             bind:this={canvas1}
             {width}
@@ -101,9 +101,11 @@
             onmouseout={handleCursorIsNotVisible}
         />
 
-        <div class="w-62 flex flex-col items-center justify-center">
+        <div
+            class="w-full lg:w-62 my-5 lg:my-0 px-5 lg:px-0 order-last lg:order-0 flex flex-col items-center justify-center"
+        >
             <button
-                class="m-2 border rounded-lg py-2 px-3 bg-sky-500 hover:bg-sky-700 cursor-pointer"
+                class="w-full lg:w-auto m-2 border rounded-lg py-2 px-3 bg-sky-500 hover:bg-sky-700 cursor-pointer"
                 onclick={handleImagesComparaison}
             >
                 Compare images
