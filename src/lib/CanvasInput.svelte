@@ -248,7 +248,7 @@
     </canvas>
     <div class="flex flex-row px-5 lg:px-0">
         <button
-            class="m-2 grow border rounded-lg py-2 px-3 bg-amber-600 hover:bg-amber-700 cursor-pointer"
+            class="m-2 grow border rounded-lg py-2 px-3 bg-orange-600 hover:bg-orange-700 cursor-pointer"
             onclick={handleUpload}
         >
             Upload

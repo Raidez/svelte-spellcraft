@@ -43,7 +43,6 @@
         const img1 = cv.matFromImageData(imgData1);
         const img2 = cv.matFromImageData(imgData2);
         sim = testImageMatching(img1, img2);
-        console.log(`Similarity: ${sim}`);
 
         if (sim < 0.5) {
             score = 0;

@@ -13,6 +13,10 @@
         results = [];
     }
 
+    function removeLine(index: number) {
+        results.splice(index, 1);
+    }
+
     function generateUniqueId(existingIds: Set<string>): string {
         let id = generateShortId();
         while (existingIds.has(id)) {
@@ -65,6 +69,7 @@
                 <th class="p-2">Image A</th>
                 <th class="p-2">Image B</th>
                 <th class="p-2">Similarity</th>
+                <th class="p-2"> </th>
             </tr>
         </thead>
         <tbody>
@@ -79,7 +84,15 @@
                     <td class="p-2">
                         <img src={result.B} width="100" alt="B" />
                     </td>
-                    <td class="p-2">{result.sim.toFixed(4)}</td>
+                    <td class="p-2">{result.sim.toFixed(4)} </td>
+                    <td class="p-2">
+                        <a
+                            class="bi bi-x-circle text-xl text-red-600 hover:text-red-700 cursor-pointer"
+                            title="Remove"
+                            onclick={() => removeLine(i)}
+                            href="#noop"
+                        ></a>
+                    </td>
                 </tr>
             {/each}
         </tbody>

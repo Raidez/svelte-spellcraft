@@ -4,9 +4,9 @@
     import starSpecial from "../assets/star.special.svg";
 
     let {
-        sim = $bindable(0),
-        score = $bindable(0),
-        isSpecial = $bindable(false),
+        sim = 0,
+        score = 0,
+        isSpecial = false,
     }: { sim: number; score: number; isSpecial: boolean } = $props();
 </script>
 

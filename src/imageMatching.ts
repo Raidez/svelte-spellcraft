@@ -7,8 +7,6 @@ function shapeMatching(img1: cv.Mat, img2: cv.Mat): number {
     cv.threshold(img1, dst1, 127, 255, cv.THRESH_BINARY_INV);
     cv.threshold(img2, dst2, 127, 255, cv.THRESH_BINARY_INV);
 
-    console.log("Binarization done");
-
     // Find contours
     let contours1 = new cv.MatVector();
     let contours2 = new cv.MatVector();
@@ -25,8 +23,6 @@ function shapeMatching(img1: cv.Mat, img2: cv.Mat): number {
     // Clean up
     dst1.delete();
     dst2.delete();
-
-    console.log(`Contours found: img1=${contours1.size()}, img2=${contours2.size()}`);
 
     // Compare all contours between img1 and img2
     const distances = [];
@@ -46,8 +42,6 @@ function shapeMatching(img1: cv.Mat, img2: cv.Mat): number {
     // Clean up contours
     contours1.delete();
     contours2.delete();
-
-    console.log(`Best distances: ${distances}`);
 
     // Calculate mean distance
     const meanDistance = distances.reduce((a, b) => a + b, 0);
@@ -70,8 +64,6 @@ function featureMatching(img1: cv.Mat, img2: cv.Mat): number {
         return 0.0;
     }
 
-    console.log(`Keypoints detected: img1=${kp1.size()}, img2=${kp2.size()}`);
-
     // ORB for keypoint description
     const orb = new cv.ORB();
     let des1 = new cv.Mat();
@@ -81,14 +73,10 @@ function featureMatching(img1: cv.Mat, img2: cv.Mat): number {
 
     const kp1_size = kp1.size();
 
-    console.log(`Descriptors computed: img1=${des1.rows}, img2=${des2.rows}`);
-
     // Brute-Force matching
     const bf = new cv.BFMatcher(cv.NORM_HAMMING, false);
     let matches = new cv.DMatchVectorVector();
     bf.knnMatch(des1, des2, matches, 2);
-
-    console.log(`Total matches found: ${matches.size()}`);
 
     // Apply ratio test
     const good_matches = []
@@ -99,8 +87,6 @@ function featureMatching(img1: cv.Mat, img2: cv.Mat): number {
             good_matches.push(m);
         }
     }
-
-    console.log(`Good matches after ratio test: ${good_matches.length}`);
 
     // Clean up
     kp1.delete();
@@ -121,12 +107,9 @@ export default function testImageMatching(img1: cv.Mat, img2: cv.Mat): number {
     cv.cvtColor(img1, dst1, cv.COLOR_RGBA2GRAY);
     cv.cvtColor(img2, dst2, cv.COLOR_RGBA2GRAY);
 
-    console.log("Grayscale conversion done");
-
     // Compute similarities
     const ssim = shapeMatching(dst1, dst2);
     const fsim = featureMatching(dst1, dst2);
-    console.log(`Shape Similarity: ${ssim}, Feature Similarity: ${fsim}`);
     const totalSim = ssim * 0.5 + fsim * 0.5;
 
     // Clean up
