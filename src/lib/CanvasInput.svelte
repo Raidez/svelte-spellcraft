@@ -55,7 +55,6 @@
     }
 
     function handleUpload(): void {
-        console.log("Upload image");
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "image/*";
@@ -96,8 +95,6 @@
             return;
         }
 
-        console.log("Download image");
-
         const link = document.createElement("a");
         link.download = `image_${generateShortId()}.png`;
         link.href = canvasElement.toDataURL();
@@ -105,7 +102,6 @@
     }
 
     function handleImageLoad(event: Event): void {
-        console.log("Image loaded");
         const src = cv.imread(event.target as HTMLImageElement);
         cv.imshow(canvasElement, src);
         src.delete();
@@ -113,7 +109,6 @@
     }
 
     function handleClear(): void {
-        console.log("Clear canvas");
         ctx.fillStyle = "white";
         ctx.fillRect(0, 0, width, height);
         onclear?.();

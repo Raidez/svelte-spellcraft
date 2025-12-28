@@ -1,20 +1,24 @@
 <script lang="ts">
     import JSZip from "jszip";
-    import { generateShortId } from "../main";
+    import { generateShortId, type Result } from "../main";
 
     let {
-        results = $bindable<any[]>([]),
+        results = $bindable<Result[]>([]),
     }: {
-        results: any[];
+        results: Result[];
     } = $props();
 
-    function handleClear() {
-        console.log("Clear results");
+    function clearResults() {
         results = [];
     }
 
     function removeLine(index: number) {
         results.splice(index, 1);
+    }
+
+    interface Image {
+        url: string;
+        uid?: string;
     }
 
     function generateUniqueId(existingIds: Set<string>): string {
@@ -26,21 +30,47 @@
         return id;
     }
 
-    async function handleDownload() {
-        console.log("Download results");
+    function extractImageData(
+        url: string,
+        images: Array<Image>,
+        uids: Set<string>,
+    ): [string, string] {
+        let uid = "";
 
+        const image = images.find((img) => img.url === url);
+        if (image) {
+            uid = image.uid!;
+        } else {
+            uid = generateUniqueId(uids);
+            images.push({ url: url, uid: uid });
+        }
+
+        const imageName = `image_${uid}.png`;
+        const base64Data = url.split(",")[1];
+
+        return [imageName, base64Data];
+    }
+
+    async function handleDownload() {
         const uids = new Set<string>();
+        const images: Array<Image> = [];
 
         const zip = new JSZip();
         const img = zip.folder("images");
 
         // Save images
         const finalResults = results.map((result) => {
-            const base64DataA = result.A.split(",")[1];
-            const base64DataB = result.B.split(",")[1];
-            const imageAName = `image_${generateUniqueId(uids)}.png`;
-            const imageBName = `image_${generateUniqueId(uids)}.png`;
-
+            // Save image files
+            const [imageAName, base64DataA] = extractImageData(
+                result.A,
+                images,
+                uids,
+            );
+            const [imageBName, base64DataB] = extractImageData(
+                result.B,
+                images,
+                uids,
+            );
             img?.file(imageAName, base64DataA, { base64: true });
             img?.file(imageBName, base64DataB, { base64: true });
 
@@ -103,7 +133,7 @@
         <div class="flex justify-center my-4">
             <button
                 class="m-2 border rounded-lg py-2 px-3 bg-red-600 hover:bg-red-700 cursor-pointer"
-                onclick={handleClear}
+                onclick={clearResults}
             >
                 Clear
                 <i class="bi bi-trash"></i>

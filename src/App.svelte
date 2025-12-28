@@ -1,6 +1,7 @@
 <script lang="ts">
     import cv from "@techstark/opencv-js";
     import testImageMatching from "./imageMatching";
+    import type { Result } from "./main";
 
     import ResultTable from "./lib/ResultTable.svelte";
     import StrokeInput from "./lib/StrokeInput.svelte";
@@ -16,7 +17,7 @@
     let score = $state(0);
     let isSpecial = $state(false);
     let cursorVisible = $state(false);
-    let results = $state<any[]>([]);
+    let results = $state<Result[]>([]);
 
     let canvas1: CanvasInput;
     let canvas2: CanvasInput;
@@ -31,8 +32,6 @@
             alert("One canvas is empty!");
             return;
         }
-
-        console.log("Compare images");
 
         const ctx1 = canvas1.getCanvasContext();
         const ctx2 = canvas2.getCanvasContext();
