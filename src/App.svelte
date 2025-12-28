@@ -1,6 +1,6 @@
 <script lang="ts">
     import cv from "@techstark/opencv-js";
-    import testImageMatching from "./imageMatching";
+    import { testImageMatching, combinedMatching } from "./imageMatching";
     import type { Result } from "./main";
 
     import ResultTable from "./lib/ResultTable.svelte";
@@ -17,6 +17,7 @@
     let score = $state(0);
     let isSpecial = $state(false);
     let cursorVisible = $state(false);
+    let method = $state("new");
     let results = $state<Result[]>([]);
 
     let canvas1: CanvasInput;
@@ -41,7 +42,12 @@
 
         const img1 = cv.matFromImageData(imgData1);
         const img2 = cv.matFromImageData(imgData2);
-        sim = testImageMatching(img1, img2);
+
+        if (method === "new") {
+            sim = combinedMatching(img1, img2);
+        } else {
+            sim = testImageMatching(img1, img2);
+        }
 
         if (sim < 0.5) {
             score = 0;
@@ -105,7 +111,7 @@
         />
 
         <div
-            class="w-full lg:w-62 my-5 lg:my-0 px-5 lg:px-0 order-last lg:order-0 flex flex-col items-center justify-center"
+            class="w-full lg:w-62 my-5 lg:my-0 px-10 lg:px-0 order-last lg:order-0 flex flex-col items-center justify-center"
         >
             <button
                 class="w-full lg:w-auto m-2 border rounded-lg py-2 px-3 bg-sky-500 hover:bg-sky-700 cursor-pointer"
@@ -116,6 +122,14 @@
             </button>
 
             <ScoreDisplay {sim} {score} {isSpecial} />
+
+            <select
+                class="w-full lg:w-auto m-2 p-2 border rounded-lg bg-stone-800 cursor-pointer"
+                bind:value={method}
+            >
+                <option value="old">Old method</option>
+                <option value="new">New method</option>
+            </select>
         </div>
 
         <CanvasInput
